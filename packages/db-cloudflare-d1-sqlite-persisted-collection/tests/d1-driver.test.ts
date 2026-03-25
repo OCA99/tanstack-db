@@ -3,7 +3,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { runSQLiteDriverContractSuite } from '../../db-sqlite-persisted-collection-core/tests/contracts/sqlite-driver-contract'
-import { CloudflareD1SQLiteDriver } from '../src/d1-driver'
+import {
+  CloudflareD1SQLiteDriver,
+  type CloudflareD1DatabaseLike,
+} from '../src/d1-driver'
 import { createBetterSqliteD1DatabaseHarness } from './helpers/better-sqlite-d1-database'
 import type { SQLiteDriverContractHarness } from '../../db-sqlite-persisted-collection-core/tests/contracts/sqlite-driver-contract'
 
@@ -32,6 +35,24 @@ function createDriverHarness(): SQLiteDriverContractHarness {
 runSQLiteDriverContractSuite(`cloudflare d1 sqlite driver`, createDriverHarness)
 
 describe(`cloudflare d1 sqlite driver`, () => {
+  it(`rejects databases that expose withSession without prepare`, () => {
+    expect(
+      () =>
+        new CloudflareD1SQLiteDriver({
+          database: {
+            withSession: () => ({
+              prepare: () => ({
+                bind: () => {
+                  throw new Error(`unexpected bind`)
+                },
+                run: () => Promise.resolve({ results: [] }),
+              }),
+            }),
+          } as unknown as CloudflareD1DatabaseLike,
+        }),
+    ).toThrow(`requires a database.prepare function`)
+  })
+
   it(`throws when top-level SQL transactions are blocked`, async () => {
     const executedSql = new Array<string>()
     const driver = new CloudflareD1SQLiteDriver({

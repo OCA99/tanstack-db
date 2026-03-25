@@ -91,11 +91,15 @@ function assertTransactionCallbackHasDriverArg(
 }
 
 function isD1DatabaseLike(value: unknown): value is CloudflareD1DatabaseLike {
+  if (typeof value !== `object` || value === null) {
+    return false
+  }
+
+  const database = value as CloudflareD1DatabaseLike
   return (
-    typeof value === `object` &&
-    value !== null &&
-    (typeof (value as CloudflareD1DatabaseLike).prepare === `function` ||
-      typeof (value as CloudflareD1DatabaseLike).withSession === `function`)
+    typeof database.prepare === `function` &&
+    (database.withSession === undefined ||
+      typeof database.withSession === `function`)
   )
 }
 
