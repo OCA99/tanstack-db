@@ -5,13 +5,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
-import { runRuntimeBridgeE2EContractSuite } from '../../db-sqlite-persisted-collection-core/tests/contracts/runtime-bridge-e2e-contract'
-import type {
-  RuntimeBridgeE2EContractError,
-  RuntimeBridgeE2EContractHarness,
-  RuntimeBridgeE2EContractHarnessFactory,
-  RuntimeBridgeE2EContractTodo,
-} from '../../db-sqlite-persisted-collection-core/tests/contracts/runtime-bridge-e2e-contract'
+import type { RuntimeBridgeE2EContractError } from '../../db-sqlite-persisted-collection-core/tests/contracts/runtime-bridge-e2e-contract'
 
 type RuntimeProcessHarness = {
   baseUrl: string
@@ -230,107 +224,13 @@ function assertRuntimeError(
   throw new Error(`Expected runtime call to fail, but it succeeded`)
 }
 
-function assertRuntimeSuccess<TPayload>(
-  response: WranglerRuntimeResponse<TPayload>,
-): TPayload | undefined {
-  if (response.ok) {
-    return response.rows
-  }
-
-  throw new Error(`${response.error.name}: ${response.error.message}`)
-}
-
-const createHarness: RuntimeBridgeE2EContractHarnessFactory = () => {
-  const tempDirectory = mkdtempSync(join(tmpdir(), `db-cloudflare-d1-e2e-`))
-  const persistPath = join(tempDirectory, `wrangler-state`)
-  const collectionId = `todos`
-  let nextSequence = 1
-  const runtimePromise = startWranglerRuntime({
-    persistPath,
-  })
-
-  const harness: RuntimeBridgeE2EContractHarness = {
-    writeTodoFromClient: async (todo: RuntimeBridgeE2EContractTodo) => {
-      const runtime = await runtimePromise
-      const result = await postJson<void>(runtime.baseUrl, `/write-todo`, {
-        collectionId,
-        todo,
-        txId: `tx-${nextSequence}`,
-        seq: nextSequence,
-        rowVersion: nextSequence,
-      })
-      nextSequence++
-
-      if (!result.ok) {
-        throw new Error(`${result.error.name}: ${result.error.message}`)
-      }
-    },
-    loadTodosFromClient: async (targetCollectionId?: string) => {
-      const runtime = await runtimePromise
-      const result = await postJson<
-        Array<{ key: string; value: RuntimeBridgeE2EContractTodo }>
-      >(runtime.baseUrl, `/load-todos`, {
-        collectionId: targetCollectionId ?? collectionId,
-      })
-      if (!result.ok) {
-        throw new Error(`${result.error.name}: ${result.error.message}`)
-      }
-      return result.rows ?? []
-    },
-    loadUnknownCollectionErrorFromClient:
-      async (): Promise<RuntimeBridgeE2EContractError> => {
-        const runtime = await runtimePromise
-        const result = await postJson<never>(
-          runtime.baseUrl,
-          `/load-unknown-collection-error`,
-          {
-            collectionId: `missing`,
-          },
-        )
-        if (result.ok) {
-          throw new Error(
-            `Expected unknown collection request to fail, but it succeeded`,
-          )
-        }
-        return result.error
-      },
-    restartHost: async () => {
-      const runtime = await runtimePromise
-      await runtime.restart()
-    },
-    cleanup: async () => {
-      try {
-        const runtime = await runtimePromise
-        await runtime.stop()
-      } finally {
-        rmSync(tempDirectory, { recursive: true, force: true })
-      }
-    },
-  }
-
-  return harness
-}
-
-runRuntimeBridgeE2EContractSuite(
-  `cloudflare d1 runtime bridge e2e (wrangler local)`,
-  createHarness,
-  {
-    testTimeoutMs: 90_000,
-  },
-)
-
-describe(`cloudflare d1 schema mismatch behavior (wrangler local)`, () => {
-  it(`throws on schema mismatch in sync-absent mode`, async () => {
-    const tempDirectory = mkdtempSync(
-      join(tmpdir(), `db-cloudflare-d1-local-mismatch-e2e-`),
-    )
+describe(`cloudflare d1 runtime bridge e2e (wrangler local)`, () => {
+  it(`fails fast when SQL transaction statements are blocked`, async () => {
+    const tempDirectory = mkdtempSync(join(tmpdir(), `db-cloudflare-d1-e2e-`))
     const persistPath = join(tempDirectory, `wrangler-state`)
     const collectionId = `todos`
-    let runtime = await startWranglerRuntime({
+    const runtime = await startWranglerRuntime({
       persistPath,
-      syncEnabled: false,
-      schemaVersion: 1,
-      collectionId,
     })
 
     try {
@@ -340,43 +240,51 @@ describe(`cloudflare d1 schema mismatch behavior (wrangler local)`, () => {
         seq: 1,
         rowVersion: 1,
         todo: {
-          id: `local-1`,
-          title: `Local mode row`,
+          id: `tx-blocked-1`,
+          title: `Blocked transaction write`,
           score: 10,
         },
       })
-      assertRuntimeSuccess(writeResult)
-    } finally {
-      await runtime.stop()
-    }
-
-    runtime = await startWranglerRuntime({
-      persistPath,
-      syncEnabled: false,
-      schemaVersion: 2,
-      collectionId,
-    })
-    try {
-      const loadResult = await postJson<
-        Array<{ key: string; value: RuntimeBridgeE2EContractTodo }>
-      >(runtime.baseUrl, `/load-todos`, {
-        collectionId,
-      })
-      const runtimeError = assertRuntimeError(loadResult)
-      expect(runtimeError.message).toContain(`Schema version mismatch`)
+      const runtimeError = assertRuntimeError(writeResult)
+      expect(runtimeError.message).toContain(
+        `requires SQL transaction support for "BEGIN IMMEDIATE"`,
+      )
     } finally {
       await runtime.stop()
       rmSync(tempDirectory, { recursive: true, force: true })
     }
   }, 90_000)
 
-  it(`resets collection on schema mismatch in sync-present mode`, async () => {
+  it(`returns structured remote errors for missing collections`, async () => {
+    const tempDirectory = mkdtempSync(join(tmpdir(), `db-cloudflare-d1-e2e-`))
+    const persistPath = join(tempDirectory, `wrangler-state`)
+    const runtime = await startWranglerRuntime({
+      persistPath,
+    })
+
+    try {
+      const result = await postJson<never>(
+        runtime.baseUrl,
+        `/load-unknown-collection-error`,
+        {
+          collectionId: `missing`,
+        },
+      )
+      const runtimeError = assertRuntimeError(result)
+      expect(runtimeError.code).toEqual(`UNKNOWN_COLLECTION`)
+    } finally {
+      await runtime.stop()
+      rmSync(tempDirectory, { recursive: true, force: true })
+    }
+  }, 90_000)
+
+  it(`fails fast in sync-present mode when SQL transactions are blocked`, async () => {
     const tempDirectory = mkdtempSync(
-      join(tmpdir(), `db-cloudflare-d1-sync-mismatch-e2e-`),
+      join(tmpdir(), `db-cloudflare-d1-sync-e2e-`),
     )
     const persistPath = join(tempDirectory, `wrangler-state`)
     const collectionId = `todos`
-    let runtime = await startWranglerRuntime({
+    const runtime = await startWranglerRuntime({
       persistPath,
       syncEnabled: true,
       schemaVersion: 1,
@@ -395,25 +303,10 @@ describe(`cloudflare d1 schema mismatch behavior (wrangler local)`, () => {
           score: 20,
         },
       })
-      assertRuntimeSuccess(writeResult)
-    } finally {
-      await runtime.stop()
-    }
-
-    runtime = await startWranglerRuntime({
-      persistPath,
-      syncEnabled: true,
-      schemaVersion: 2,
-      collectionId,
-    })
-    try {
-      const loadResult = await postJson<
-        Array<{ key: string; value: RuntimeBridgeE2EContractTodo }>
-      >(runtime.baseUrl, `/load-todos`, {
-        collectionId,
-      })
-      const rows = assertRuntimeSuccess(loadResult) ?? []
-      expect(rows).toEqual([])
+      const runtimeError = assertRuntimeError(writeResult)
+      expect(runtimeError.message).toContain(
+        `requires SQL transaction support for "BEGIN IMMEDIATE"`,
+      )
     } finally {
       await runtime.stop()
       rmSync(tempDirectory, { recursive: true, force: true })

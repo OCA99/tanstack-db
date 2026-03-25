@@ -63,6 +63,21 @@ function isUnsupportedSqlTransactionError(error: unknown): boolean {
   )
 }
 
+function createUnsupportedSqlTransactionError(
+  operation: string,
+  cause: unknown,
+): InvalidPersistedCollectionConfigError {
+  const message =
+    cause instanceof Error && cause.message.length > 0
+      ? cause.message
+      : `unknown error`
+  return new InvalidPersistedCollectionConfigError(
+    `Cloudflare D1 driver requires SQL transaction support for "${operation}". ` +
+      `This runtime rejected SQL transaction statements, so atomic transaction semantics cannot be guaranteed. ` +
+      `Original error: ${message}`,
+  )
+}
+
 function assertTransactionCallbackHasDriverArg(
   fn: (transactionDriver: SQLiteDriver) => Promise<unknown>,
 ): void {
@@ -182,19 +197,13 @@ export class CloudflareD1SQLiteDriver implements SQLiteDriver {
   ): Promise<T> {
     return this.enqueue(async () => {
       const transactionDriver = this.createTransactionDriver()
-      let transactionStarted = false
-
       try {
         await this.executeExec(`BEGIN IMMEDIATE`)
-        transactionStarted = true
       } catch (error) {
-        if (!isUnsupportedSqlTransactionError(error)) {
-          throw error
+        if (isUnsupportedSqlTransactionError(error)) {
+          throw createUnsupportedSqlTransactionError(`BEGIN IMMEDIATE`, error)
         }
-      }
-
-      if (!transactionStarted) {
-        return fn(transactionDriver)
+        throw error
       }
 
       try {
@@ -296,11 +305,13 @@ export class CloudflareD1SQLiteDriver implements SQLiteDriver {
     try {
       await this.executeExec(`SAVEPOINT ${savepointName}`)
     } catch (error) {
-      if (!isUnsupportedSqlTransactionError(error)) {
-        throw error
+      if (isUnsupportedSqlTransactionError(error)) {
+        throw createUnsupportedSqlTransactionError(
+          `SAVEPOINT ${savepointName}`,
+          error,
+        )
       }
-
-      return fn(transactionDriver)
+      throw error
     }
 
     try {

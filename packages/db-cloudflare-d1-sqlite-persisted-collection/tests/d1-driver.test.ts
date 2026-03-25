@@ -32,7 +32,7 @@ function createDriverHarness(): SQLiteDriverContractHarness {
 runSQLiteDriverContractSuite(`cloudflare d1 sqlite driver`, createDriverHarness)
 
 describe(`cloudflare d1 sqlite driver`, () => {
-  it(`falls back to non-SQL transaction mode when SQL transaction statements are blocked`, async () => {
+  it(`throws when top-level SQL transactions are blocked`, async () => {
     const executedSql = new Array<string>()
     const driver = new CloudflareD1SQLiteDriver({
       database: {
@@ -68,12 +68,56 @@ describe(`cloudflare d1 sqlite driver`, () => {
       },
     })
 
-    await driver.transaction(async (transactionDriver) => {
-      await transactionDriver.run(`INSERT INTO todos (id) VALUES (?)`, [`1`])
-    })
+    await expect(
+      driver.transaction(async (transactionDriver) => {
+        await transactionDriver.run(`INSERT INTO todos (id) VALUES (?)`, [`1`])
+      }),
+    ).rejects.toThrow(`requires SQL transaction support for "BEGIN IMMEDIATE"`)
 
     expect(executedSql).toContain(`BEGIN IMMEDIATE`)
-    expect(executedSql).toContain(`INSERT INTO todos (id) VALUES (?)`)
+    expect(executedSql).not.toContain(`INSERT INTO todos (id) VALUES (?)`)
+  })
+
+  it(`throws when nested savepoints are blocked`, async () => {
+    const executedSql = new Array<string>()
+    const driver = new CloudflareD1SQLiteDriver({
+      database: {
+        prepare: (sql) => ({
+          bind: (..._params) => ({
+            bind: () => {
+              throw new Error(`unexpected nested bind`)
+            },
+            run: () => {
+              executedSql.push(sql)
+              if (sql.startsWith(`SAVEPOINT`)) {
+                throw new Error(`savepoint statements disabled`)
+              }
+              return Promise.resolve({ results: [] })
+            },
+          }),
+          run: () => {
+            executedSql.push(sql)
+            if (sql.startsWith(`SAVEPOINT`)) {
+              throw new Error(`savepoint statements disabled`)
+            }
+            return Promise.resolve({ results: [] })
+          },
+        }),
+      },
+    })
+
+    await expect(
+      driver.transaction(async (transactionDriver) => {
+        await transactionDriver.run(`INSERT INTO todos (id) VALUES (?)`, [`1`])
+        await transactionDriver.transaction(async (nestedDriver) => {
+          await nestedDriver.run(`INSERT INTO todos (id) VALUES (?)`, [`2`])
+        })
+      }),
+    ).rejects.toThrow(`requires SQL transaction support for "SAVEPOINT tsdb_sp_`)
+
+    expect(
+      executedSql.some((sql) => sql.startsWith(`SAVEPOINT tsdb_sp_`)),
+    ).toBe(true)
   })
 
   it(`uses database.exec when available`, async () => {
