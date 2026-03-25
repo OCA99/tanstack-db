@@ -78,6 +78,11 @@ jobs:
           cd packages/db-cloudflare-do-sqlite-persisted-collection
           pnpm test:e2e
 
+      - name: Run Cloudflare D1 persisted collection E2E tests
+        run: |
+          cd packages/db-cloudflare-d1-sqlite-persisted-collection
+          pnpm test:e2e
+
       - name: Run React Native/Expo persisted collection E2E tests
         run: |
           cd packages/db-react-native-sqlite-persisted-collection

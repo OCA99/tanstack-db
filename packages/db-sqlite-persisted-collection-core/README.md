@@ -1,8 +1,8 @@
 # @tanstack/db-sqlite-persisted-collection-core
 
 Shared SQLite persistence primitives for TanStack DB. Runtime-specific wrappers
-(Node, Electron, React Native, Cloudflare Durable Objects) build on top of this
-package.
+(Node, Electron, React Native, Cloudflare D1, Cloudflare Durable Objects)
+build on top of this package.
 
 ## What this package provides
 
@@ -90,6 +90,7 @@ In most applications, use a runtime package directly:
 - `@tanstack/db-browser-wa-sqlite-persisted-collection`
 - `@tanstack/db-electron-sqlite-persisted-collection`
 - `@tanstack/db-react-native-sqlite-persisted-collection`
+- `@tanstack/db-cloudflare-d1-sqlite-persisted-collection`
 - `@tanstack/db-cloudflare-do-sqlite-persisted-collection`
 
 Those packages provide concrete drivers and runtime wiring.

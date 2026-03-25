@@ -979,6 +979,28 @@ importers:
         specifier: ^7.3.1
         version: 7.3.1(@types/node@25.2.2)(jiti@2.6.1)(lightningcss@1.31.1)(sass@1.90.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.1)
 
+  packages/db-cloudflare-d1-sqlite-persisted-collection:
+    dependencies:
+      '@tanstack/db-sqlite-persisted-collection-core':
+        specifier: workspace:*
+        version: link:../db-sqlite-persisted-collection-core
+      typescript:
+        specifier: '>=4.7'
+        version: 5.9.3
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      '@vitest/coverage-istanbul':
+        specifier: ^3.2.4
+        version: 3.2.4(vitest@3.2.4)
+      better-sqlite3:
+        specifier: ^12.6.2
+        version: 12.8.0
+      wrangler:
+        specifier: ^4.64.0
+        version: 4.75.0
+
   packages/db-cloudflare-do-sqlite-persisted-collection:
     dependencies:
       '@tanstack/db-sqlite-persisted-collection-core':
@@ -15458,7 +15480,7 @@ snapshots:
 
   '@isaacs/fs-minipass@4.0.1':
     dependencies:
-      minipass: 7.1.2
+      minipass: 7.1.3
 
   '@isaacs/ttlcache@1.4.1': {}
 
@@ -18832,7 +18854,7 @@ snapshots:
       fs-minipass: 3.0.3
       glob: 13.0.6
       lru-cache: 11.2.5
-      minipass: 7.1.2
+      minipass: 7.1.3
       minipass-collect: 2.0.1
       minipass-flush: 1.0.5
       minipass-pipeline: 1.2.4
@@ -20722,7 +20744,7 @@ snapshots:
 
   fs-minipass@3.0.3:
     dependencies:
-      minipass: 7.1.2
+      minipass: 7.1.3
 
   fs.realpath@1.0.0: {}
 
@@ -22065,7 +22087,7 @@ snapshots:
       '@npmcli/agent': 4.0.0
       cacache: 20.0.3
       http-cache-semantics: 4.2.0
-      minipass: 7.1.2
+      minipass: 7.1.3
       minipass-fetch: 5.0.1
       minipass-flush: 1.0.5
       minipass-pipeline: 1.2.4
@@ -22577,7 +22599,7 @@ snapshots:
 
   minipass-collect@2.0.1:
     dependencies:
-      minipass: 7.1.2
+      minipass: 7.1.3
 
   minipass-fetch@2.1.2:
     dependencies:
@@ -22589,7 +22611,7 @@ snapshots:
 
   minipass-fetch@5.0.1:
     dependencies:
-      minipass: 7.1.2
+      minipass: 7.1.3
       minipass-sized: 2.0.0
       minizlib: 3.1.0
     optionalDependencies:
@@ -22628,7 +22650,7 @@ snapshots:
 
   minizlib@3.1.0:
     dependencies:
-      minipass: 7.1.2
+      minipass: 7.1.3
 
   mitt@3.0.1: {}
 
@@ -22845,7 +22867,7 @@ snapshots:
       '@npmcli/redact': 4.0.0
       jsonparse: 1.3.1
       make-fetch-happen: 15.0.3
-      minipass: 7.1.2
+      minipass: 7.1.3
       minipass-fetch: 5.0.1
       minizlib: 3.1.0
       npm-package-arg: 13.0.0
@@ -23179,7 +23201,7 @@ snapshots:
   path-scurry@1.11.1:
     dependencies:
       lru-cache: 10.4.3
-      minipass: 7.1.2
+      minipass: 7.1.3
 
   path-scurry@2.0.2:
     dependencies:
@@ -24585,7 +24607,7 @@ snapshots:
 
   ssri@13.0.1:
     dependencies:
-      minipass: 7.1.2
+      minipass: 7.1.3
 
   ssri@9.0.1:
     dependencies:
@@ -24861,7 +24883,7 @@ snapshots:
     dependencies:
       '@isaacs/fs-minipass': 4.0.1
       chownr: 3.0.0
-      minipass: 7.1.2
+      minipass: 7.1.3
       minizlib: 3.1.0
       yallist: 5.0.0
 
