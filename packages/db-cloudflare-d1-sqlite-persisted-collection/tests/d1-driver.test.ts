@@ -113,7 +113,9 @@ describe(`cloudflare d1 sqlite driver`, () => {
           await nestedDriver.run(`INSERT INTO todos (id) VALUES (?)`, [`2`])
         })
       }),
-    ).rejects.toThrow(`requires SQL transaction support for "SAVEPOINT tsdb_sp_`)
+    ).rejects.toThrow(
+      `requires SQL transaction support for "SAVEPOINT tsdb_sp_`,
+    )
 
     expect(
       executedSql.some((sql) => sql.startsWith(`SAVEPOINT tsdb_sp_`)),
