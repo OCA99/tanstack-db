@@ -645,3 +645,39 @@ If you're unsure about an implementation decision:
 6. Ask: "Is this as simple as it could be?"
 
 Remember: Simple, well-typed, well-tested code with clear abstractions is the goal. We raise the standard of code quality—not through complexity, but through clarity and correctness.
+
+## Cursor Cloud specific instructions
+
+### Environment
+
+- **Node.js 24.8.0** is required (specified in `.nvmrc`). Use `nvm use` to activate.
+- **pnpm 10.27.0** is the package manager (enforced via `packageManager` field in root `package.json`). Enabled via `corepack enable`.
+- The monorepo uses pnpm workspaces with packages under `packages/` and examples under `examples/`.
+
+### Key commands
+
+All commands are run from the workspace root:
+
+| Task | Command |
+|------|---------|
+| Install deps | `pnpm install` |
+| Build all packages | `pnpm run build` |
+| Lint all packages | `pnpm run lint` |
+| Run unit tests | `pnpm run test` |
+| Dep version check | `pnpm run test:sherif` |
+
+### Build order matters
+
+`pnpm run build` must complete before `pnpm run test` or `pnpm run lint`, since packages depend on each other's build output (e.g. `@tanstack/db-ivm` must be built before `@tanstack/db`).
+
+### E2E tests require Docker
+
+E2E tests for `electric-db-collection` and `query-db-collection` require PostgreSQL + ElectricSQL running via Docker Compose at `packages/db-collection-e2e/docker/docker-compose.yml`. These are not part of the standard `pnpm run test` and must be run separately (e.g. `cd packages/electric-db-collection && pnpm test:e2e`).
+
+### Ignored build scripts
+
+pnpm may warn about ignored build scripts for dependencies like `esbuild`, `wa-sqlite`, etc. The `pnpm.onlyBuiltDependencies` field in root `package.json` allowlists `better-sqlite3` and `electron`. Other dependency build scripts are intentionally skipped and do not affect development.
+
+### Git hooks
+
+Husky + lint-staged is configured. Pre-commit runs `eslint --fix` on staged `.ts`/`.tsx` files.
