@@ -60,8 +60,7 @@ function readRows<T>(
   statement: BetterSqliteStatement,
   params: ReadonlyArray<unknown>,
 ): ReadonlyArray<T> {
-  const statementWithVariadics =
-    statement as BetterSqliteStatementWithVariadics
+  const statementWithVariadics = statement as BetterSqliteStatementWithVariadics
   if (params.length === 0) {
     return statementWithVariadics.all() as ReadonlyArray<T>
   }
@@ -72,8 +71,7 @@ function runStatement(
   statement: BetterSqliteStatement,
   params: ReadonlyArray<unknown>,
 ): void {
-  const statementWithVariadics =
-    statement as BetterSqliteStatementWithVariadics
+  const statementWithVariadics = statement as BetterSqliteStatementWithVariadics
   if (params.length === 0) {
     statementWithVariadics.run()
     return

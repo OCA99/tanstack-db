@@ -55,7 +55,11 @@ describe(`cloudflare d1 sqlite driver`, () => {
           }),
           run: () => {
             executedSql.push(sql)
-            if (sql.startsWith(`BEGIN`) || sql === `COMMIT` || sql === `ROLLBACK`) {
+            if (
+              sql.startsWith(`BEGIN`) ||
+              sql === `COMMIT` ||
+              sql === `ROLLBACK`
+            ) {
               throw new Error(`sql transactions disabled`)
             }
             return Promise.resolve({ results: [] })
@@ -101,7 +105,9 @@ describe(`cloudflare d1 sqlite driver`, () => {
     await driver.exec(`CREATE TABLE test_exec (id TEXT PRIMARY KEY)`)
 
     expect(executedSql).toEqual([])
-    expect(fallbackRuns).toEqual([`CREATE TABLE test_exec (id TEXT PRIMARY KEY)`])
+    expect(fallbackRuns).toEqual([
+      `CREATE TABLE test_exec (id TEXT PRIMARY KEY)`,
+    ])
   })
 
   it(`handles null results as an empty query result set`, async () => {

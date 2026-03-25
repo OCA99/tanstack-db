@@ -658,13 +658,13 @@ Remember: Simple, well-typed, well-tested code with clear abstractions is the go
 
 All commands are run from the workspace root:
 
-| Task | Command |
-|------|---------|
-| Install deps | `pnpm install` |
-| Build all packages | `pnpm run build` |
-| Lint all packages | `pnpm run lint` |
-| Run unit tests | `pnpm run test` |
-| Dep version check | `pnpm run test:sherif` |
+| Task               | Command                |
+| ------------------ | ---------------------- |
+| Install deps       | `pnpm install`         |
+| Build all packages | `pnpm run build`       |
+| Lint all packages  | `pnpm run lint`        |
+| Run unit tests     | `pnpm run test`        |
+| Dep version check  | `pnpm run test:sherif` |
 
 ### Build order matters
 

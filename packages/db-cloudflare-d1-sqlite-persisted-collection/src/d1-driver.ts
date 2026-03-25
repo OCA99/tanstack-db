@@ -7,7 +7,9 @@ export type CloudflareD1PreparedResultLike<T = Record<string, unknown>> = {
 
 export type CloudflareD1PreparedStatementLike = {
   bind: (...params: ReadonlyArray<unknown>) => CloudflareD1PreparedStatementLike
-  run: <T = Record<string, unknown>>() => Promise<CloudflareD1PreparedResultLike<T>>
+  run: <T = Record<string, unknown>>() => Promise<
+    CloudflareD1PreparedResultLike<T>
+  >
 }
 
 export type CloudflareD1SessionLike = {
@@ -18,7 +20,9 @@ export type CloudflareD1SessionLike = {
 export type CloudflareD1DatabaseLike = {
   prepare: (sql: string) => CloudflareD1PreparedStatementLike
   exec?: (sql: string) => Promise<unknown>
-  withSession?: (constraint?: `first-primary` | string) => CloudflareD1SessionLike
+  withSession?: (
+    constraint?: `first-primary` | string,
+  ) => CloudflareD1SessionLike
 }
 
 export type CloudflareD1SQLiteDriverOptions = {
@@ -217,10 +221,7 @@ export class CloudflareD1SQLiteDriver implements SQLiteDriver {
   }
 
   private async executeExec(sql: string): Promise<void> {
-    if (
-      typeof this.database.exec === `function` &&
-      canUseDatabaseExec(sql)
-    ) {
+    if (typeof this.database.exec === `function` && canUseDatabaseExec(sql)) {
       await this.database.exec(normalizeExecSql(sql))
       return
     }
